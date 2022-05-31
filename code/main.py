@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 
 def motion_detection():
     cap = cv2.VideoCapture(-1)
@@ -6,23 +7,33 @@ def motion_detection():
     first_frame = None
     font = cv2.FONT_HERSHEY_SCRIPT_SIMPLEX
 
+    buffer_frames = []
+
+    def preprocess(frame):
+        greyscale_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gaussian_frame = cv2.GaussianBlur(greyscale_frame, (21,21),0)
+        blur_frame = cv2.blur(gaussian_frame, (5,5))
+        return blur_frame
+
+    for _ in range(4):
+        success, frame = cap.read()
+        blur_frame = preprocess(frame)
+        buffer_frames.append(blur_frame)
+
     while True:
         text = ''
         timer = cv2.getTickCount()
         success, frame = cap.read()
 
-        greyscale_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        gaussian_frame = cv2.GaussianBlur(greyscale_frame, (21,21),0)
-        blur_frame = cv2.blur(gaussian_frame, (5,5))
+        blur_frame = preprocess(frame)
+        buffer_frames.append(blur_frame)
 
-        greyscale_image = blur_frame 
+        median = np.median(buffer_frames, axis=0).astype(dtype=np.uint8)
+        buffer_frames.pop(0)
 
-        if first_frame is None:
-            first_frame = greyscale_image 
-
-        frame_delta = cv2.absdiff(first_frame, greyscale_image)
+        frame_delta = cv2.absdiff(median, blur_frame)
         thresh_image = cv2.threshold(frame_delta, 40, 255, cv2.THRESH_BINARY)[1]
-        dilate_image = cv2.dilate(thresh_image, None, iterations=5)
+        dilate_image = cv2.dilate(thresh_image, None, iterations=15)
 
         cnt, _ = cv2.findContours(dilate_image.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         for c in cnt:
@@ -39,8 +50,7 @@ def motion_detection():
         cv2.imshow('Capture Feed', frame)
         cv2.imshow('Threshold', dilate_image)
         cv2.imshow('Frame_delta', frame_delta)
-
-        first_frame = greyscale_image 
+        cv2.imshow('Median', median)
 
         if cv2.waitKey(1) & 0xff == ord('q'):
             cap.release()
