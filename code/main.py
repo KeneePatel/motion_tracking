@@ -8,10 +8,10 @@ def motion_detection():
     font = cv2.FONT_HERSHEY_SCRIPT_SIMPLEX
 
     threshold_value = 30
-    threshold_area = 1750
+    threshold_area = 3000
     dilate_iters = 10
 
-    buffer_frames_number = 10
+    buffer_frames_number = 9
     buffer_frames = []
 
     def preprocess(frame):
