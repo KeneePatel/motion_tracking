@@ -6,16 +6,19 @@ def motion_detection():
     first_frame = None
     font = cv2.FONT_HERSHEY_SCRIPT_SIMPLEX
 
+    def preprocess(frame):
+        greyscale_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gaussian_frame = cv2.GaussianBlur(greyscale_frame, (21,21),0)
+        blur_frame = cv2.blur(gaussian_frame, (5,5))
+        return blur_frame
+
+
     while True:
         text = ''
         timer = cv2.getTickCount()
         success, frame = cap.read()
 
-        greyscale_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        gaussian_frame = cv2.GaussianBlur(greyscale_frame, (21,21),0)
-        blur_frame = cv2.blur(gaussian_frame, (5,5))
-
-        greyscale_image = blur_frame 
+        greyscale_image = preprocess(frame)
 
         if first_frame is None:
             first_frame = greyscale_image 
