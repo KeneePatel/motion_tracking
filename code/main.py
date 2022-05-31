@@ -7,6 +7,11 @@ def motion_detection():
     first_frame = None
     font = cv2.FONT_HERSHEY_SCRIPT_SIMPLEX
 
+    threshold_value = 30
+    threshold_area = 1750
+    dilate_iters = 10
+
+    buffer_frames_number = 10
     buffer_frames = []
 
     def preprocess(frame):
@@ -15,7 +20,7 @@ def motion_detection():
         blur_frame = cv2.blur(gaussian_frame, (5,5))
         return blur_frame
 
-    for _ in range(4):
+    for _ in range(buffer_frames_number-1):
         success, frame = cap.read()
         blur_frame = preprocess(frame)
         buffer_frames.append(blur_frame)
@@ -32,12 +37,12 @@ def motion_detection():
         buffer_frames.pop(0)
 
         frame_delta = cv2.absdiff(median, blur_frame)
-        thresh_image = cv2.threshold(frame_delta, 40, 255, cv2.THRESH_BINARY)[1]
-        dilate_image = cv2.dilate(thresh_image, None, iterations=15)
+        thresh_image = cv2.threshold(frame_delta, threshold_value, 255, cv2.THRESH_BINARY)[1]
+        dilate_image = cv2.dilate(thresh_image, None, iterations=dilate_iters)
 
         cnt, _ = cv2.findContours(dilate_image.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         for c in cnt:
-            if cv2.contourArea(c) < 1500:
+            if cv2.contourArea(c) < threshold_area:
                 continue
             (x, y, w, h) = cv2.boundingRect(c)
             cv2.rectangle(frame, (x,y), (x+w, y+h), (0, 255, 0), 2)
